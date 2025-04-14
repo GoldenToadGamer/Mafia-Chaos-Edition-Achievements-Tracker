@@ -1,0 +1,143 @@
+import { useEffect, useState } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+
+const achievements = [
+  { name: "Perfect Crime", points: 15, type: "Mafia", description: "Win as Mafia without losing a single member." },
+  { name: "Lies for Days", points: 10, type: "Mafia", description: "Survive 5 rounds of questioning without being lynched." },
+  { name: "Guilt Tripper", points: 10, type: "Mafia", description: "Frame a Town role and get them lynched." },
+  { name: "Last Man Laughing", points: 15, type: "Mafia", description: "Be the last Mafia alive and win." },
+  { name: "Silent but Deadly", points: 10, type: "Mafia", description: "Win without speaking during any day phase." },
+  { name: "Justice Served", points: 25, type: "Town", description: "Vote to lynch all Mafia correctly." },
+  { name: "Power of Deduction", points: 15, type: "Town", description: "Catch 2 Mafia using only logic." },
+  { name: "Chain of Trust", points: 10, type: "Town", description: "Form a 2-player Town alliance and both survive." },
+  { name: "Martyrdom", points: 10, type: "Town", description: "Die protecting your target." },
+  { name: "Town MVP", points: 15, type: "Town", description: "Use your ability successfully every night." },
+  { name: "Cloud%", points: 5, type: "Chaos", description: "Die Night 1 to The Cloud." },
+  { name: "Let Chaos Reign", points: 10, type: "Chaos", description: "Win as any Chaotic Neutral." },
+  { name: "Jester’s Crown", points: 15, type: "Chaos", description: "Win as Jester and get your killer lynched." },
+  { name: "Master of Mischief", points: 15, type: "Chaos", description: "Cause 3+ roles to fail in one game." },
+  { name: "Wildcard Win", points: 25, type: "Chaos", description: "Be alive when neither Town nor Mafia wins." },
+  { name: "Oops!", points: 5, type: "Funny", description: "Accidentally cause a teammate's death." },
+  { name: "Mayor of Nothing", points: 5, type: "Funny", description: "Reveal as Mayor and die same day." },
+  { name: "Trust Fall", points: 10, type: "Funny", description: "Reveal your role and still get lynched." },
+  { name: "Déjà Vu", points: 5, type: "Funny", description: "Get the same role 3 games in a row." },
+  { name: "Social Butterfly", points: 10, type: "Funny", description: "Be whispered to by 5+ players." },
+  { name: "5D Chess", points: 15, type: "Strategic", description: "Fake claim a real role and survive." },
+  { name: "Reverse Psychology", points: 10, type: "Strategic", description: "Claim Mafia and convince people you're not." },
+  { name: "Imposter Syndrome", points: 10, type: "Strategic", description: "Be Mafia and get investigated as Town." },
+  { name: "Big Brain Energy", points: 25, type: "Strategic", description: "Correctly guess 3+ roles by endgame." },
+  { name: "Ultimate Chaos", points: 25, type: "Chaos", description: "Win as The Cloud and survive to the final 3." }
+];
+
+const titles = [
+  { name: "Novice of Deceit", points: 25 },
+  { name: "Suspicion Magnet", points: 50 },
+  { name: "Agent of Chaos", points: 75 },
+  { name: "Mastermind", points: 100 },
+  { name: "Legend of Mafia", points: 150 }
+];
+
+export default function ChaosTracker() {
+  const [unlocked, setUnlocked] = useState([]);
+  const [playerName, setPlayerName] = useState("");
+  const [players, setPlayers] = useState([]);
+
+  useEffect(() => {
+    const savedPlayers = JSON.parse(localStorage.getItem("chaos_players")) || [];
+    setPlayers(savedPlayers);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chaos_players", JSON.stringify(players));
+  }, [players]);
+
+  const toggleAchievement = (name) => {
+    setUnlocked((prev) =>
+      prev.includes(name) ? prev.filter((a) => a !== name) : [...prev, name]
+    );
+  };
+
+  const totalPoints = unlocked.reduce((sum, name) => {
+    const ach = achievements.find((a) => a.name === name);
+    return sum + (ach?.points || 0);
+  }, 0);
+
+  const unlockedTitles = titles.filter(t => totalPoints >= t.points);
+
+  const savePlayer = () => {
+    if (playerName.trim()) {
+      const newPlayer = { name: playerName, points: totalPoints, achievements: unlocked };
+      const updatedPlayers = [...players.filter(p => p.name !== playerName), newPlayer];
+      setPlayers(updatedPlayers);
+      setPlayerName("");
+      setUnlocked([]);
+    }
+  };
+
+  const loadPlayer = () => {
+    const existing = players.find(p => p.name === playerName);
+    if (existing) {
+      alert(`${existing.name}'s score is ${existing.points}.`);
+      setUnlocked(existing.achievements || []);
+    } else {
+      alert("Player not found.");
+    }
+  };
+
+  return (
+    <div className="p-4 max-w-5xl mx-auto space-y-6">
+      <h1 className="text-3xl font-bold text-center">Chaos Edition Tracker</h1>
+
+      <div className="flex items-center gap-4">
+        <Input
+          value={playerName}
+          onChange={(e) => setPlayerName(e.target.value)}
+          placeholder="Enter your name"
+        />
+        <Button onClick={savePlayer}>Save Progress</Button>
+        <Button onClick={loadPlayer}>Load Player</Button>
+      </div>
+
+      <div className="text-lg">Total Points: <span className="font-bold">{totalPoints}</span></div>
+      <Progress value={(totalPoints / 150) * 100} className="h-3" />
+
+      <h2 className="text-2xl font-semibold mt-6">Unlocked Titles</h2>
+      <ul className="list-disc list-inside">
+        {unlockedTitles.map((title) => (
+          <li key={title.name}>{title.name}</li>
+        ))}
+      </ul>
+
+      <h2 className="text-2xl font-semibold mt-6">Achievements</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {achievements.map((ach) => (
+          <Card
+            key={ach.name}
+            onClick={() => toggleAchievement(ach.name)}
+            className={`cursor-pointer transition border-2 ${unlocked.includes(ach.name) ? 'border-green-500' : 'border-transparent hover:border-gray-300'}`}
+          >
+            <CardContent className="p-4 space-y-2">
+              <div className="text-lg font-semibold">{ach.name}</div>
+              <div className="text-sm text-gray-600">{ach.type} • {ach.points} pts</div>
+              <div className="text-sm text-gray-500 italic">{ach.description}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <h2 className="text-2xl font-semibold mt-6">Leaderboard</h2>
+      <ul className="space-y-1">
+        {players
+          .sort((a, b) => b.points - a.points)
+          .map((player, index) => (
+            <li key={index} className="bg-gray-100 p-2 rounded shadow">
+              #{index + 1} - <strong>{player.name}</strong>: {player.points} pts
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+}
